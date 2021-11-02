@@ -277,7 +277,7 @@ def main():
             'coco': 30,
             'cityscapes': 200,
             'pascal': 50,
-            'rgbFire': 50 ,
+            'rgbFire': 100 ,
         }
         args.epochs = epoches[args.dataset.lower()]
 
@@ -292,7 +292,7 @@ def main():
             'coco': 0.1,
             'cityscapes': 0.01,
             'pascal': 0.007,
-            'rgbFire': 0.007,
+            'rgbFire': 0.02,
         }
         args.lr = lrs[args.dataset.lower()] / (4 * len(args.gpu_ids)) * args.batch_size
 
