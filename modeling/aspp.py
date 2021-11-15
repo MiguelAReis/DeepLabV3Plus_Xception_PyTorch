@@ -4,13 +4,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 
+import brevitas.nn as qnn
+from brevitas.quant import Int8Bias as BiasQuant
+
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, kernel_size, padding, dilation, BatchNorm):
         super(_ASPPModule, self).__init__()
-        self.atrous_conv = nn.Conv2d(inplanes, planes, kernel_size=kernel_size,
-                                            stride=1, padding=padding, dilation=dilation, bias=False)
+        weight_bit_width=4
+        self.atrous_conv = qnn.QuantConv2d(inplanes, planes, kernel_size=kernel_size,
+                                            stride=1, padding=padding, dilation=dilation, bias=False,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True)
         self.bn = BatchNorm(planes)
-        self.relu = nn.ReLU()
+        self.relu = qnn.QuantReLU(bit_width=weight_bit_width, return_quant_tensor=True)
 
         self._init_weight()
 
