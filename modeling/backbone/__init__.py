@@ -10,6 +10,6 @@ def build_backbone(backbone, output_stride, BatchNorm):
     elif backbone == 'mobilenet':
         return mobilenet.MobileNetV2(output_stride, BatchNorm)
     elif backbone == 'xceptionQuant':
-        return xceptionQuant.AlignedXception(output_stride, BatchNorm,2)
+        return xceptionQuant.AlignedXception(output_stride, BatchNorm,8)
     else:
         raise NotImplementedError

@@ -17,8 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--in-path', type=str, required=True, help='image to test')
     parser.add_argument('--out-path', type=str, required=True, help='mask image to save')
-    parser.add_argument('--backbone', type=str, default='xception',
-                        choices=['resnet', 'xception', 'drn', 'mobilenet'],
+    parser.add_argument('--backbone', type=str, default='xceptionQuant',
+                        choices=['resnet', 'xception', 'drn', 'mobilenet','xceptionQuant'],
                         help='backbone name (default: resnet)')
     parser.add_argument('--ckpt', type=str, default='deeplab-resnet.pth',
                         help='saved model')

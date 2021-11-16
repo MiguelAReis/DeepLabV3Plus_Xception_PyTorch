@@ -11,7 +11,7 @@ class Decoder(nn.Module):
     def __init__(self, num_classes, backbone, BatchNorm):
         super(Decoder, self).__init__()
 
-        weight_bit_width=2
+        weight_bit_width=8
 
         if backbone == 'resnet' or backbone == 'drn':
             low_level_inplanes = 256
