@@ -7,11 +7,14 @@ from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
 
+
+weight_bit_width=8
+activ_bit_width=8
+
 class Decoder(nn.Module):
     def __init__(self, num_classes, backbone, BatchNorm):
         super(Decoder, self).__init__()
 
-        weight_bit_width=8
 
         if backbone == 'resnet' or backbone == 'drn':
             low_level_inplanes = 256
@@ -26,14 +29,14 @@ class Decoder(nn.Module):
 
         self.conv1 = qnn.QuantConv2d(low_level_inplanes, 48, 1, bias=False,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True)
         self.bn1 = BatchNorm(48)
-        self.relu = qnn.QuantReLU(bit_width=weight_bit_width, return_quant_tensor=True)
+        self.relu = qnn.QuantReLU(bit_width=activ_bit_width, return_quant_tensor=True)
         self.last_conv = nn.Sequential(qnn.QuantConv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True),
                                        BatchNorm(256),
-                                       qnn.QuantReLU(bit_width=weight_bit_width, return_quant_tensor=True),
+                                       qnn.QuantReLU(bit_width=activ_bit_width, return_quant_tensor=True),
                                        nn.Dropout(0.5),
                                        qnn.QuantConv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True),
                                        BatchNorm(256),
-                                       qnn.QuantReLU(bit_width=weight_bit_width, return_quant_tensor=True),
+                                       qnn.QuantReLU(bit_width=activ_bit_width, return_quant_tensor=True),
                                        nn.Dropout(0.1),
                                        qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True))
         self._init_weight()

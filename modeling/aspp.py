@@ -7,14 +7,18 @@ from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
 
+weight_bit_width=8
+activ_bit_width=8
+
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, kernel_size, padding, dilation, BatchNorm):
         super(_ASPPModule, self).__init__()
-        weight_bit_width=8
+
+
         self.atrous_conv = qnn.QuantConv2d(inplanes, planes, kernel_size=kernel_size,
                                             stride=1, padding=padding, dilation=dilation, bias=False,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True)
         self.bn = BatchNorm(planes)
-        self.relu = qnn.QuantReLU(bit_width=weight_bit_width, return_quant_tensor=True)
+        self.relu = qnn.QuantReLU(bit_width=activ_bit_width, return_quant_tensor=True)
 
         self._init_weight()
 
@@ -57,12 +61,12 @@ class ASPP(nn.Module):
         self.aspp4 = _ASPPModule(inplanes, 256, 3, padding=dilations[3], dilation=dilations[3], BatchNorm=BatchNorm)
 
         self.global_avg_pool = nn.Sequential(nn.AdaptiveAvgPool2d((1, 1)),
-                                             nn.Conv2d(inplanes, 256, 1, stride=1, bias=False),
+                                             qnn.QuantConv2d(inplanes, 256, 1, stride=1, bias=False, weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True),
                                              BatchNorm(256),
-                                             nn.ReLU())
-        self.conv1 = nn.Conv2d(1280, 256, 1, bias=False)
+                                             qnn.QuantReLU(bit_width=activ_bit_width, return_quant_tensor=True))
+        self.conv1 = qnn.QuantConv2d(1280, 256, 1, bias=False,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True)
         self.bn1 = BatchNorm(256)
-        self.relu = nn.ReLU()
+        self.relu = qnn.QuantReLU(bit_width=activ_bit_width, return_quant_tensor=True)
         self.dropout = nn.Dropout(0.5)
         self._init_weight()
 
