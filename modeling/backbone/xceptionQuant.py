@@ -8,7 +8,7 @@ from modeling.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
 import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
 
-weight_bit_width=8
+weight_bit_width=4
 activ_bit_width=8
 
 def fixed_padding(inputs, kernel_size, dilation):
