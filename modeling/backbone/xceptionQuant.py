@@ -9,7 +9,7 @@ import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
 
 weight_bit_width=4
-activ_bit_width=8
+activ_bit_width=4
 
 def fixed_padding(inputs, kernel_size, dilation):
     kernel_size_effective = kernel_size + (kernel_size - 1) * (dilation - 1)
