@@ -6,8 +6,8 @@ from modeling.aspp import build_aspp
 from modeling.decoder import build_decoder
 from modeling.backbone import build_backbone
 
-weight_bit_width=4
-activ_bit_width=6
+weight_bit_width=5
+activ_bit_width=5
 
 
 class DeepLab(nn.Module):
