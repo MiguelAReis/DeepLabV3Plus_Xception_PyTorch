@@ -7,7 +7,7 @@ from modeling.decoder import build_decoder
 from modeling.backbone import build_backbone
 
 weight_bit_width=5
-activ_bit_width=5
+activ_bit_width=2
 
 
 class DeepLab(nn.Module):

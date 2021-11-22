@@ -9,7 +9,7 @@ from brevitas.quant import Int8Bias as BiasQuant
 
 
 weight_bit_width=5
-activ_bit_width=5
+activ_bit_width=2
 
 class Decoder(nn.Module):
     def __init__(self, num_classes, backbone, BatchNorm):
