@@ -9,7 +9,7 @@ import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
 
 weight_bit_width=4
-activ_bit_width=5
+activ_bit_width=6
 
 def fixed_padding(inputs, kernel_size, dilation):
     kernel_size_effective = kernel_size + (kernel_size - 1) * (dilation - 1)
@@ -118,7 +118,7 @@ class AlignedXception(nn.Module):
         # Entry flow
         self.conv1 = qnn.QuantConv2d(3, 32, 3, stride=2, padding=1, bias=False,weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True)
         self.bn1 = BatchNorm(32)
-        self.relu = qnn.QuantReLU(inplace=True,bit_width=activ_bit_width, return_quant_tensor=True)
+        self.relu = qnn.QuantReLU(inplace=True,bit_width=8, return_quant_tensor=True)
 
         self.conv2 = qnn.QuantConv2d(32, 64, 3, stride=1, padding=1, bias=False, weight_bit_width=weight_bit_width, bias_quant=BiasQuant, return_quant_tensor=True)
         self.bn2 = BatchNorm(64)

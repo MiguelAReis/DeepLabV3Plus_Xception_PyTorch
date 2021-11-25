@@ -8,7 +8,7 @@ import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
 
 weight_bit_width=4
-activ_bit_width=5
+activ_bit_width=6
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, kernel_size, padding, dilation, BatchNorm):
