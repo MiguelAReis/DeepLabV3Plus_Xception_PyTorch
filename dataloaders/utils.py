@@ -21,13 +21,7 @@ def decode_segmap(label_mask, dataset, plot=False):
     Returns:
         (np.ndarray, optional): the resulting decoded color image.
     """
-    if dataset == 'pascal' or dataset == 'coco':
-        n_classes = 21
-        label_colours = get_pascal_labels()
-    elif dataset == 'cityscapes':
-        n_classes = 19
-        label_colours = get_cityscapes_labels()
-    elif dataset == 'rgbFire':
+    if dataset == 'rgbFire':
         n_classes = 2
         label_colours = np.array([[0, 0, 0],[255,255,255]])
     else:
@@ -67,38 +61,3 @@ def encode_segmap(mask):
     label_mask = label_mask.astype(int)
     return label_mask
 
-
-def get_cityscapes_labels():
-    return np.array([
-        [128, 64, 128],
-        [244, 35, 232],
-        [70, 70, 70],
-        [102, 102, 156],
-        [190, 153, 153],
-        [153, 153, 153],
-        [250, 170, 30],
-        [220, 220, 0],
-        [107, 142, 35],
-        [152, 251, 152],
-        [0, 130, 180],
-        [220, 20, 60],
-        [255, 0, 0],
-        [0, 0, 142],
-        [0, 0, 70],
-        [0, 60, 100],
-        [0, 80, 100],
-        [0, 0, 230],
-        [119, 11, 32]])
-
-
-def get_pascal_labels():
-    """Load the mapping that associates pascal classes with label colors
-    Returns:
-        np.ndarray with dimensions (21, 3)
-    """
-    return np.asarray([[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0],
-                       [0, 0, 128], [128, 0, 128], [0, 128, 128], [128, 128, 128],
-                       [64, 0, 0], [192, 0, 0], [64, 128, 0], [192, 128, 0],
-                       [64, 0, 128], [192, 0, 128], [64, 128, 128], [192, 128, 128],
-                       [0, 64, 0], [128, 64, 0], [0, 192, 0], [128, 192, 0],
-                       [0, 64, 128]])

@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from mypath import Path
 from dataloaders import make_data_loader
-from modeling.sync_batchnorm.replicate import patch_replication_callback
+from modeling.deeplabQuant import *
 from modeling.deeplab import *
 from utils.loss import SegmentationLosses
 from utils.calculate_weights import calculate_weigths_labels
@@ -33,18 +33,16 @@ class Trainer(object):
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
 
         # Define network
-        model = DeepLab(num_classes=self.nclass,
+        DeepLabQuant.setBitWidths(8,8)
+        model = DeepLabQuant(num_classes=self.nclass,
                         backbone=args.backbone,
                         output_stride=args.out_stride,
-                        sync_bn=args.sync_bn,
                         freeze_bn=args.freeze_bn)
 
-        train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
-                        {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
+        #train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},{'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
 
         # Define Optimizer
-        optimizer = torch.optim.SGD(train_params, momentum=args.momentum,
-                                    weight_decay=args.weight_decay, nesterov=args.nesterov)
+        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
 
         # Define Criterion
         # whether to use class balanced weights
@@ -63,13 +61,11 @@ class Trainer(object):
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
         # Define lr scheduler
-        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,
-                                            args.epochs, len(self.train_loader))
+        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,args.epochs, len(self.train_loader))
 
         # Using cuda
         if args.cuda:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.args.gpu_ids)
-            patch_replication_callback(self.model)
             self.model = self.model.cuda()
 
         # Resuming checkpoint
