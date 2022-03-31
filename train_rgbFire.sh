@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python3 train.py --backbone xception --lr 0.02 --workers 4 --epochs 100 --batch-size 2 --gpu-ids 0 --checkname rgbFire_xception --eval-interval 1 --dataset rgbFire --base-size 300 --crop-size 300
