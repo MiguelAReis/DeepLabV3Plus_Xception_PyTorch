@@ -33,7 +33,8 @@ class Trainer(object):
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
 
         # Define network
-        DeepLabQuant.setBitWidths(8,8)
+        print("Weights= "+args.weights +" Activations= " +args.activations)
+        DeepLabQuant.setBitWidths(args.weights ,args.activations)
         model = DeepLabQuant(num_classes=self.nclass,
                         backbone=args.backbone,
                         output_stride=args.out_stride,
@@ -210,6 +211,10 @@ class Trainer(object):
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
         print('Loss: %.3f' % test_loss)
 
+        with open("QuantResults.txt", "a") as myfile:
+            string="Weights= "+ args.weights+" Activations= "+args.activations+ "mIoU= "+  mIoU+" Acc= "+ Acc + " Loss= " + test_loss+"\n"
+            myfile.write(string)
+
 
 
 def main():
@@ -283,6 +288,11 @@ def main():
                         help='evaluuation interval (default: 1)')
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
+
+    parser.add_argument('--weights', type=int, default=8,
+                        help='weights bit width')
+    parser.add_argument('--activations', type=int, default=8,
+                        help='activations bit widht')
 
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
