@@ -33,9 +33,9 @@ class Trainer(object):
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
 
         # Define network
-        print("Weights= "+args.weights +" Activations= " +args.activations)
-        DeepLabQuant.setBitWidths(args.weights ,args.activations)
-        model = DeepLabQuant(num_classes=self.nclass,
+        #print("Weights= "+str(args.weights) +" Activations= " +str(args.activations))
+        #DeepLabQuant.setBitWidths(args.weights ,args.activations)
+        model = DeepLab(num_classes=self.nclass,
                         backbone=args.backbone,
                         output_stride=args.out_stride,
                         freeze_bn=args.freeze_bn)
@@ -43,7 +43,7 @@ class Trainer(object):
         #train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},{'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
 
         # Define Optimizer
-        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
         # Define Criterion
         # whether to use class balanced weights
@@ -61,13 +61,14 @@ class Trainer(object):
         
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
-        # Define lr scheduler
-        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,args.epochs, len(self.train_loader))
+        
 
         # Using cuda
         if args.cuda:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.args.gpu_ids)
             self.model = self.model.cuda()
+
+
 
         # Resuming checkpoint
         self.best_pred = 0.0
@@ -80,11 +81,16 @@ class Trainer(object):
                 self.model.module.load_state_dict(checkpoint['state_dict'])
             else:
                 self.model.load_state_dict(checkpoint['state_dict'])
-            if not args.ft:
-                self.optimizer.load_state_dict(checkpoint['optimizer'])
+            #if not args.ft:
+            #    self.optimizer.load_state_dict(checkpoint['optimizer'])
+            self.model.to("cuda")
             self.best_pred = checkpoint['best_pred']
             print("=> loaded checkpoint '{}' (epoch {})"
                   .format(args.resume, checkpoint['epoch']))
+
+
+        # Define lr scheduler
+        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,args.epochs+args.start_epoch , len(self.train_loader))
 
         # Clear start epoch if fine-tuning
         if args.ft:
@@ -182,7 +188,7 @@ class Trainer(object):
                 'best_pred': self.best_pred,
             }, is_best)
 
-    def testing(self):
+    def testing(self,args):
         self.model.eval()
         self.evaluator.reset()
         tbar = tqdm(self.test_loader, desc='\r')
@@ -212,7 +218,7 @@ class Trainer(object):
         print('Loss: %.3f' % test_loss)
 
         with open("QuantResults.txt", "a") as myfile:
-            string="Weights= "+ args.weights+" Activations= "+args.activations+ "mIoU= "+  mIoU+" Acc= "+ Acc + " Loss= " + test_loss+"\n"
+            string="Weights= "+ str(args.weights)+" Activations= "+str(args.activations)+ "mIoU= "+  str(mIoU)+" Acc= "+ str(Acc) + " Loss= " + str(test_loss)+"\n"
             myfile.write(string)
 
 
@@ -341,12 +347,12 @@ def main():
     trainer = Trainer(args)
     print('Starting Epoch:', trainer.args.start_epoch)
     print('Total Epoches:', trainer.args.epochs)
-    for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
+    for epoch in range(trainer.args.start_epoch, trainer.args.epochs+trainer.args.start_epoch):
         trainer.training(epoch)
         if not trainer.args.no_val and epoch % args.eval_interval == (args.eval_interval - 1):
             trainer.validation(epoch)
 
-    trainer.testing()        
+    trainer.testing(args)        
     trainer.writer.close()
 
 if __name__ == "__main__":
