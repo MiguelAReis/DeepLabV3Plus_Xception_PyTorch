@@ -184,6 +184,7 @@ class Trainer(object):
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred
+            print("Saving Checkpoint")
             self.saver.save_checkpoint({
                 'epoch': epoch + 1,
                 'state_dict': self.model.module.state_dict(),
