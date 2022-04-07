@@ -85,7 +85,7 @@ class Trainer(object):
             if not args.ft:
                 self.optimizer.load_state_dict(checkpoint['optimizer'])
             self.model.to("cuda")
-            self.best_pred = checkpoint['best_pred']
+            self.best_pred = 0#checkpoint['best_pred']
             print("=> loaded checkpoint '{}' (epoch {})"
                   .format(args.resume, checkpoint['epoch']))
 
@@ -151,7 +151,7 @@ class Trainer(object):
                 output = self.model(image)
             loss = self.criterion(output, target)
             test_loss += loss.item()
-            tbar.set_description('Test loss: %.3f' % (test_loss / (i + 1)))
+            tbar.set_description('Val loss: %.3f' % (test_loss / (i + 1)))
             pred = output.data.cpu().numpy()
             target = target.cpu().numpy()
             pred = np.argmax(pred, axis=1)
