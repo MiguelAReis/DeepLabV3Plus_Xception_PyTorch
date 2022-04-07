@@ -33,9 +33,9 @@ class Trainer(object):
         self.train_loader, self.val_loader, self.test_loader, self.nclass = make_data_loader(args, **kwargs)
 
         # Define network
-        #print("Weights= "+str(args.weights) +" Activations= " +str(args.activations))
-        #DeepLabQuant.setBitWidths(args.weights ,args.activations)
-        model = DeepLab(num_classes=self.nclass,
+        print("Weights= "+str(args.weights) +" Activations= " +str(args.activations))
+        DeepLabQuant.setBitWidths(args.weights ,args.activations)
+        model = DeepLabQuant(num_classes=self.nclass,
                         backbone=args.backbone,
                         output_stride=args.out_stride,
                         freeze_bn=args.freeze_bn)
@@ -43,7 +43,8 @@ class Trainer(object):
         #train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},{'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
 
         # Define Optimizer
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        #optimizer = torch.optim.Adam(model.parameters(),lr=args.lr, weight_decay=args.weight_decay)
+        optimizer = torch.optim.SGD(model.parameters(),lr=args.lr,momentum=args.momentum, weight_decay=args.weight_decay)
 
         # Define Criterion
         # whether to use class balanced weights
@@ -81,8 +82,8 @@ class Trainer(object):
                 self.model.module.load_state_dict(checkpoint['state_dict'])
             else:
                 self.model.load_state_dict(checkpoint['state_dict'])
-            #if not args.ft:
-            #    self.optimizer.load_state_dict(checkpoint['optimizer'])
+            if not args.ft:
+                self.optimizer.load_state_dict(checkpoint['optimizer'])
             self.model.to("cuda")
             self.best_pred = checkpoint['best_pred']
             print("=> loaded checkpoint '{}' (epoch {})"
@@ -92,9 +93,7 @@ class Trainer(object):
         # Define lr scheduler
         self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,args.epochs+args.start_epoch , len(self.train_loader))
 
-        # Clear start epoch if fine-tuning
-        if args.ft:
-            args.start_epoch = 0
+
 
     def training(self, epoch):
         train_loss = 0.0
@@ -103,18 +102,22 @@ class Trainer(object):
         num_img_tr = len(self.train_loader)
         for i, sample in enumerate(tbar):
             image, target = sample['image'], sample['label']
+
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
+            if(torch.isnan(output).any()):
+                print("\n\nOUTPUT IS NAN\n\n")
+                quit()
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
+            
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
-
             # Show 10 * 3 inference results each epoch
             if i % (num_img_tr // 10) == 0:
                 global_step = i + num_img_tr * epoch
@@ -218,7 +221,7 @@ class Trainer(object):
         print('Loss: %.3f' % test_loss)
 
         with open("QuantResults.txt", "a") as myfile:
-            string="Weights= "+ str(args.weights)+" Activations= "+str(args.activations)+ "mIoU= "+  str(mIoU)+" Acc= "+ str(Acc) + " Loss= " + str(test_loss)+"\n"
+            string="Weights,"+ str(args.weights)+",Activations,"+str(args.activations)+ ",mIoU,"+  str(mIoU)+",Acc,"+ str(Acc) + ",Loss," + str(test_loss)+"\n"
             myfile.write(string)
 
 

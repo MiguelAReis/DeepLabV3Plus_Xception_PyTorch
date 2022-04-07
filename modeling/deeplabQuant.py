@@ -18,7 +18,6 @@ from dependencies import value
 
 class CustomQuant(ExtendedInjector):
     bit_width_impl_type = BitWidthImplType.CONST
-    scaling_impl_type = ScalingImplType.CONST
     restrict_scaling_type = RestrictValueType.POWER_OF_TWO
     zero_point_impl = ZeroZeroPoint
     float_to_int_impl_type = FloatToIntImplType.ROUND
@@ -60,8 +59,6 @@ import torch.utils.model_zoo as model_zoo
 class DeepLabQuant(nn.Module):
     def __init__(self, backbone='resnet', output_stride=16, num_classes=21, freeze_bn=False):
         super(DeepLabQuant, self).__init__()
-        global weightBitWidth
-        global activationBitWidth
 
         self.imageQuant = qnn.QuantIdentity(bit_width=8, act_quant=CustomActQuant, return_quant_tensor=True)
 
@@ -103,12 +100,15 @@ class SeparableConv2d(nn.Module):
     def __init__(self, inplanes, planes, kernel_size=3, stride=1, dilation=1, bias=False):
         super(SeparableConv2d, self).__init__()
 
+
+
         self.conv1 = qnn.QuantConv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
         self.bn = nn.BatchNorm2d(inplanes)
         self.pointwise = qnn.QuantConv2d(inplanes, planes, 1, 1, 0, 1, 1, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 
     def forward(self, x):
         x = fixed_padding(x, self.conv1.kernel_size[0], dilation=self.conv1.dilation[0])
+
         x = self.conv1(x)
         x = self.bn(x)
         x = self.pointwise(x)
@@ -118,6 +118,8 @@ class SeparableConv2d(nn.Module):
 class Block(nn.Module):
     def __init__(self, inplanes, planes, reps, stride=1, dilation=1, start_with_relu=True, grow_first=True, is_last=False):
         super(Block, self).__init__()
+
+
 
         if planes != inplanes or stride != 1:
             self.skip = qnn.QuantConv2d(inplanes, planes, 1, stride=stride, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
@@ -181,6 +183,7 @@ class AlignedXception(nn.Module):
     def __init__(self, output_stride,pretrained=True):
         super(AlignedXception, self).__init__()
 
+
         if output_stride == 16:
             entry_block3_stride = 2
             middle_block_dilation = 1
@@ -241,9 +244,6 @@ class AlignedXception(nn.Module):
         self.conv5 = SeparableConv2d(1536, 2048, 3, stride=1, dilation=exit_block_dilations[1])
         self.bn5 = nn.BatchNorm2d(2048)
 
-        # Load pretrained model
-        if pretrained:
-            self._load_pretrained_model()
 
     def forward(self, x):
         # Entry flow
@@ -299,45 +299,13 @@ class AlignedXception(nn.Module):
 
 
 
-    def _load_pretrained_model(self):
-        pretrain_dict = model_zoo.load_url('http://data.lip6.fr/cadene/pretrainedmodels/xception-b5690688.pth')
-        model_dict = {}
-        state_dict = self.state_dict()
-
-        for k, v in pretrain_dict.items():
-            if k in state_dict:
-                if 'pointwise' in k:
-                    v = v.unsqueeze(-1).unsqueeze(-1)
-                if k.startswith('block11'):
-                    model_dict[k] = v
-                    model_dict[k.replace('block11', 'block12')] = v
-                    model_dict[k.replace('block11', 'block13')] = v
-                    model_dict[k.replace('block11', 'block14')] = v
-                    model_dict[k.replace('block11', 'block15')] = v
-                    model_dict[k.replace('block11', 'block16')] = v
-                    model_dict[k.replace('block11', 'block17')] = v
-                    model_dict[k.replace('block11', 'block18')] = v
-                    model_dict[k.replace('block11', 'block19')] = v
-                elif k.startswith('block12'):
-                    model_dict[k.replace('block12', 'block20')] = v
-                elif k.startswith('bn3'):
-                    model_dict[k] = v
-                    model_dict[k.replace('bn3', 'bn4')] = v
-                elif k.startswith('conv4'):
-                    model_dict[k.replace('conv4', 'conv5')] = v
-                elif k.startswith('bn4'):
-                    model_dict[k.replace('bn4', 'bn5')] = v
-                else:
-                    model_dict[k] = v
-        state_dict.update(model_dict)
-        self.load_state_dict(state_dict)
-
-
 ### ASPP
 
 class _ASPPModule(nn.Module):
     def __init__(self, inplanes, planes, kernel_size, padding, dilation):
         super(_ASPPModule, self).__init__()
+
+
         self.atrous_conv = qnn.QuantConv2d(inplanes, planes, kernel_size=kernel_size, stride=1, padding=padding, dilation=dilation, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
         self.bn = nn.BatchNorm2d(planes)
         self.relu = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
@@ -354,6 +322,8 @@ class _ASPPModule(nn.Module):
 class ASPP(nn.Module):
     def __init__(self, backbone, output_stride):
         super(ASPP, self).__init__()
+
+
         if backbone == 'drn':
             inplanes = 512
         elif backbone == 'mobilenet':
@@ -373,7 +343,7 @@ class ASPP(nn.Module):
         self.aspp4 = _ASPPModule(inplanes, 256, 3, padding=dilations[3], dilation=dilations[3])
         
         self.global_avg_pool = nn.Sequential(
-            qnn.QuantAdaptiveAvgPool2d((1, 1), bit_width=activationBitWidth, return_quant_tensor=True),
+            nn.AdaptiveAvgPool2d((1, 1)),
             qnn.QuantConv2d(inplanes, 256, 1, stride=1, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True),
             nn.BatchNorm2d(256),
             qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
@@ -385,14 +355,23 @@ class ASPP(nn.Module):
         self.relu = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
         self.dropout = qnn.QuantDropout(0.5, return_quant_tensor=True)
 
+        self.quant_inp = qnn.QuantIdentity(bit_width=activationBitWidth,act_quant=CustomActQuant, return_quant_tensor=True)
+        #self.concat =qnn.QuantCat(return_quant_tensor=True)
+
 
     def forward(self, x):
         x1 = self.aspp1(x)
+        x1 = self.quant_inp(x1)
         x2 = self.aspp2(x)
+        x2 = self.quant_inp(x2)
         x3 = self.aspp3(x)
+        x3 = self.quant_inp(x3)
         x4 = self.aspp4(x)
+        x4 = self.quant_inp(x4)
         x5 = self.global_avg_pool(x)
         x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)
+        x5 = self.quant_inp(x5)
+
         x = torch.cat((x1, x2, x3, x4, x5), dim=1)
 
         x = self.conv1(x)
@@ -410,6 +389,7 @@ def build_aspp(backbone, output_stride):
 class Decoder(nn.Module):
     def __init__(self, num_classes, backbone):
         super(Decoder, self).__init__()
+
         low_level_inplanes = 128
 
 
@@ -428,15 +408,18 @@ class Decoder(nn.Module):
             qnn.QuantDropout(0.1, return_quant_tensor=True),
             qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=False)
             )
-        
+        self.quant_inp = qnn.QuantIdentity(bit_width=activationBitWidth,act_quant=CustomActQuant, return_quant_tensor=True)
+        #self.concat =qnn.QuantCat(return_quant_tensor=True)
 
 
     def forward(self, x, low_level_feat):
         low_level_feat = self.conv1(low_level_feat)
         low_level_feat = self.bn1(low_level_feat)
         low_level_feat = self.relu(low_level_feat)
+        low_level_feat = self.quant_inp(low_level_feat)
 
         x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
+        x = self.quant_inp(x)
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.last_conv(x)
         
