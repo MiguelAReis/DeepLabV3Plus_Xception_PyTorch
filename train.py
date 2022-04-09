@@ -18,8 +18,6 @@ from dataloaders.utils import decode_segmap
 from PIL import Image
 from torch import autograd
 
-
-
 class Trainer(object):
     def __init__(self, args):
         self.args = args
@@ -118,7 +116,10 @@ class Trainer(object):
                 quit()
             loss = self.criterion(output, target)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1000)
+            for n, p in self.model.named_parameters():
+                if(torch.isnan(p.grad).any()):
+                    p.grad=torch.nan_to_num(p.grad)
             self.optimizer.step()
             train_loss += loss.item()
             
