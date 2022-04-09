@@ -42,7 +42,7 @@ class CustomWeightQuant(CustomQuant,WeightQuantSolver):
     scaling_const = 1.0        
 
 class CustomActQuant(CustomQuant, ActQuantSolver):
-    min_val = 0
+    min_val = -10
     max_val = 10
 
 #Global Variables
@@ -76,16 +76,19 @@ class DeepLabQuant(nn.Module):
         activationBitWidth=activation
 
     def forward(self, input):
+
+
         x= self.imageQuant(input)
         x, low_level_feat = self.backbone(x)
 
         x = self.aspp(x)
+
         x = self.decoder(x, low_level_feat)
+ 
         x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
 
         return x
 
-    
 
 #BACKBONE XCEPTION
 
@@ -252,20 +255,26 @@ class AlignedXception(nn.Module):
 
         x = self.conv1(x)
 
+
+
         x = self.bn1(x)
 
         x = self.relu1(x)
- 
 
         x = self.conv2(x)
+
         x = self.bn2(x)
+
         x = self.relu2(x)
 
         x = self.block1(x)
+
         # add relu here
         x = self.relu3(x)
+
         low_level_feat = x
         x = self.block2(x)
+
         x = self.block3(x)
 
         # Middle flow
@@ -414,7 +423,7 @@ class Decoder(nn.Module):
             nn.BatchNorm2d(256),
             qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True),
             qnn.QuantDropout(0.1, return_quant_tensor=True),
-            qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
+            qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=False)
             )
         self.quant_inp = qnn.QuantIdentity(bit_width=activationBitWidth,act_quant=CustomActQuant, return_quant_tensor=True)
         #self.concat =qnn.QuantCat(return_quant_tensor=True)
@@ -428,6 +437,7 @@ class Decoder(nn.Module):
 
         x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
         x = self.quant_inp(x)
+        
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.last_conv(x)
         

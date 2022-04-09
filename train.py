@@ -16,6 +16,9 @@ from utils.metrics import Evaluator
 
 from dataloaders.utils import decode_segmap
 from PIL import Image
+from torch import autograd
+
+
 
 class Trainer(object):
     def __init__(self, args):
@@ -39,6 +42,7 @@ class Trainer(object):
                         backbone=args.backbone,
                         output_stride=args.out_stride,
                         freeze_bn=args.freeze_bn)
+
 
         #train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},{'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
 
@@ -108,11 +112,13 @@ class Trainer(object):
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
+
             if(torch.isnan(output).any()):
                 print("\n\nOUTPUT IS NAN\n\n")
                 quit()
             loss = self.criterion(output, target)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
             self.optimizer.step()
             train_loss += loss.item()
             
