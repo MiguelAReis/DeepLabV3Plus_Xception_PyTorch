@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 from PIL import Image, ImageOps, ImageFilter
+from PIL.ImageOps import pad
 
 class Normalize(object):
     """Normalize a tensor image with mean and standard deviation.
@@ -145,6 +146,21 @@ class FixScaleCrop(object):
         img = img.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
         mask = mask.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
 
+        return {'image': img,
+                'label': mask}
+
+class ScaleKeepRatio(object):
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, sample):
+        img = sample['image']
+        mask = sample['label']
+        size=self.size
+        img = pad(img,(size,size),Image.BILINEAR,color=None, centering=(0.5, 0.5))
+        mask = pad(mask,(size,size),Image.NEAREST,color=None, centering=(0.5, 0.5))
+        img.show()
+        mask.show()
         return {'image': img,
                 'label': mask}
 

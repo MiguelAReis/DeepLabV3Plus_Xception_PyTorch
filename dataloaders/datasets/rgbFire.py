@@ -86,7 +86,7 @@ class rgbFireSegmentation(Dataset):
     def transform_tr(self, sample):
         composed_transforms = transforms.Compose([
             tr.RandomHorizontalFlip(),
-            tr.FixedResize(size=self.args.base_size),
+            tr.ScaleKeepRatio(size=self.args.base_size),
             tr.RandomGaussianBlur(),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
@@ -96,7 +96,7 @@ class rgbFireSegmentation(Dataset):
     def transform_val(self, sample):
 
         composed_transforms = transforms.Compose([
-            tr.FixedResize(size=self.args.base_size),
+            tr.ScaleKeepRatio(size=self.args.base_size),
             tr.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             tr.ToTensor()])
 
