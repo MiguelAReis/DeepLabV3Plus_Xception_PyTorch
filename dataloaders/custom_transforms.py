@@ -156,7 +156,7 @@ class ScaleKeepRatio(object):
     def __call__(self, sample):
         img = sample['image']
         mask = sample['label']
-        size=self.size
+        size = self.size
         img = pad(img,(size,size),Image.BILINEAR,color=None, centering=(0.5, 0.5))
         mask = pad(mask,(size,size),Image.NEAREST,color=None, centering=(0.5, 0.5))
         img.show()
