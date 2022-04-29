@@ -96,7 +96,8 @@ class RandomScaleCrop(object):
         img = sample['image']
         mask = sample['label']
         # random scale (short edge)
-        short_size = random.randint(int(self.base_size * 0.5), int(self.base_size * 2.0))
+        img.show()
+        short_size = self.base_size#random.randint(int(self.base_size * 0.5), int(self.base_size * 2.0))
         w, h = img.size
         if h > w:
             ow = short_size
@@ -106,6 +107,7 @@ class RandomScaleCrop(object):
             ow = int(1.0 * w * oh / h)
         img = img.resize((ow, oh), Image.BILINEAR)
         mask = mask.resize((ow, oh), Image.NEAREST)
+        print(img.size)
         # pad crop
         if short_size < self.crop_size:
             padh = self.crop_size - oh if oh < self.crop_size else 0
@@ -118,6 +120,10 @@ class RandomScaleCrop(object):
         y1 = random.randint(0, h - self.crop_size)
         img = img.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
         mask = mask.crop((x1, y1, x1 + self.crop_size, y1 + self.crop_size))
+        
+        import time
+        img.show()
+        time.sleep(3)
 
         return {'image': img,
                 'label': mask}
