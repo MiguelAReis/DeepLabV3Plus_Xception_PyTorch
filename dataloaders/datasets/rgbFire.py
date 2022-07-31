@@ -60,6 +60,7 @@ class rgbFireSegmentation(Dataset):
         # Display stats
         print('Number of images in {}: {:d}'.format(split, len(self.images)))
 
+
     def __len__(self):
         return len(self.images)
 
@@ -132,16 +133,16 @@ if __name__ == '__main__':
             img_tmp += (0.485, 0.456, 0.406)
             img_tmp *= 255.0
             img_tmp = img_tmp.astype(np.uint8)
-            plt.figure()
-            plt.title('display')
-            plt.subplot(211)
-            plt.imshow(img_tmp)
-            plt.subplot(212)
-            plt.imshow(segmap)
+            #plt.figure()
+            #plt.title('display')
+            #plt.subplot(211)
+            #plt.imshow(img_tmp)
+            #plt.subplot(212)
+            #plt.imshow(segmap)
 
         if ii == 1:
             break
 
-    plt.show(block=True)
+    plt.show(block=False)
 
 

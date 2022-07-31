@@ -5,8 +5,9 @@ from tqdm import tqdm
 
 from mypath import Path
 from dataloaders import make_data_loader
-from modeling.deeplabQuant import *
 from modeling.deeplab import *
+#from modeling.deeplabQuant import *
+#from modeling.deeplabEfficient import *
 from utils.loss import SegmentationLosses
 from utils.calculate_weights import calculate_weigths_labels
 from utils.lr_scheduler import LR_Scheduler
@@ -35,13 +36,11 @@ class Trainer(object):
 
         # Define network
         print("Weights= "+str(args.weights) +" Activations= " +str(args.activations))
-        DeepLabQuant.setBitWidths(args.weights ,args.activations)
-        model = DeepLabQuant(num_classes=self.nclass,
+        #DeepLabQuant.setBitWidths(args.weights ,args.activations)
+        model = DeepLab(num_classes=self.nclass,
                         backbone=args.backbone,
                         output_stride=args.out_stride,
                         freeze_bn=args.freeze_bn)
-
-
         #train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},{'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
 
         # Define Optimizer
@@ -99,21 +98,24 @@ class Trainer(object):
 
     def training(self, epoch):
         train_loss = 0.0
+
         self.model.train()
         tbar = tqdm(self.train_loader)
+
         num_img_tr = len(self.train_loader)
+        
         for i, sample in enumerate(tbar):
             image, target = sample['image'], sample['label']
 
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
+
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
-            output = self.model(image)
 
+            output = self.model(image)
             if(torch.isnan(output).any()):
                 print("\n\nOUTPUT IS NAN\n\n")
-                quit()
             loss = self.criterion(output, target)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1000)
