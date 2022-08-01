@@ -124,80 +124,83 @@ class DeepLab(nn.Module):
         self.conv1 = nn.Conv2d(3, 32, 3, stride=2, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(32)
         self.relu1 = nn.ReLU(inplace=True)
-
+        
 
         self.conv2 = nn.Conv2d(32, 64, 3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(64)
         self.relu2 = nn.ReLU(inplace=True)
 
+
         self.block1 = Block(64, 128, reps=2, stride=2,  start_with_relu=False) #skip
         self.block1skip = nn.Conv2d(64, 128, 1, stride=2, bias=False)
         self.block1skipbn = nn.BatchNorm2d(128)
         self.block1relu = nn.ReLU(inplace=True)
+        self.block1identity = nn.Identity()
 
         self.block2 = Block(128, 256, reps=2, stride=2, start_with_relu=False,grow_first=True) #skip
         self.block2skip = nn.Conv2d(128, 256, 1, stride=2, bias=False)
         self.block2skipbn = nn.BatchNorm2d(256)
         self.block2relu = nn.ReLU(inplace=True)
+        self.block2identity = nn.Identity()
 
         self.block3 = Block(256, 728, reps=2, stride=entry_block3_stride,start_with_relu=False, grow_first=True, is_last=True) #skip
         self.block3skip = nn.Conv2d(256, 728, 1, stride=entry_block3_stride, bias=False)
         self.block3skipbn = nn.BatchNorm2d(728)
-        self.block3relu = nn.ReLU(inplace=True)
-
+        self.block3relu1 = nn.ReLU(inplace=True)
+        self.block3relu2 = nn.ReLU(inplace=True)
 
         # Middle flow
         self.block4  = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block4relu = nn.ReLU(inplace=True)
         self.block5  = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block5relu = nn.ReLU(inplace=True)
         self.block6  = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block6relu = nn.ReLU(inplace=True)
         self.block7  = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block7relu = nn.ReLU(inplace=True)
         self.block8  = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block8relu = nn.ReLU(inplace=True)
         self.block9  = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block9relu = nn.ReLU(inplace=True)
         self.block10 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block10relu = nn.ReLU(inplace=True)
         self.block11 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block11relu = nn.ReLU(inplace=True)
         self.block12 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block12relu = nn.ReLU(inplace=True)
         self.block13 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block13relu = nn.ReLU(inplace=True)
         self.block14 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block14relu = nn.ReLU(inplace=True)
         self.block15 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block15relu = nn.ReLU(inplace=True)
         self.block16 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block16relu = nn.ReLU(inplace=True)
         self.block17 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block17relu = nn.ReLU(inplace=True)
         self.block18 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block18relu = nn.ReLU(inplace=True)
         self.block19 = Block(728, 728, reps=3, stride=1, dilation=middle_block_dilation, start_with_relu=False, grow_first=True)
-
+        self.block19relu = nn.ReLU(inplace=True)
 
         # Exit flow
         self.block20 = Block(728, 1024, reps=2, stride=1, dilation=exit_block_dilations[0], start_with_relu=False, grow_first=False, is_last=True) #skip
         self.block20skip = nn.Conv2d(728, 1024, 1, stride=1, bias=False)
         self.block20skipbn = nn.BatchNorm2d(1024)
         self.block20relu = nn.ReLU(inplace=True)
-        #self.relu4 = nn.ReLU(inplace=True)
+        self.block20identity = nn.Identity()
 
         self.conv3 = SeparableConv2d(1024, 1536, 3, stride=1, dilation=exit_block_dilations[1])
         self.bn3 = nn.BatchNorm2d(1536)
-        self.relu5 = nn.ReLU(inplace=True)
+        self.relu3 = nn.ReLU(inplace=True)
 
         self.conv4 = SeparableConv2d(1536, 1536, 3, stride=1, dilation=exit_block_dilations[1])
         self.bn4 = nn.BatchNorm2d(1536)
-        self.relu6 = nn.ReLU(inplace=True)
+        self.relu4 = nn.ReLU(inplace=True)
 
         self.conv5 = SeparableConv2d(1536, 2048, 3, stride=1, dilation=exit_block_dilations[1])
         self.bn5 = nn.BatchNorm2d(2048)
-        self.relu7 = nn.ReLU(inplace=True)
+        self.relu5 = nn.ReLU(inplace=True)
 
         #ASPP
 
@@ -268,6 +271,7 @@ class DeepLab(nn.Module):
         x = self.block1skipbn(x)
         x = self.block1relu(x)
         x = x+x_
+        x = self.block1identity(x)
 
 
 
@@ -282,66 +286,99 @@ class DeepLab(nn.Module):
         x = self.block2skipbn(x)
         x = self.block2relu(x)
         x = x+x_
+        x = self.block2identity(x)
 
         x_ = self.block3(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block3relu1(x_)
         x = self.block3skip(x)
         x = self.block3skipbn(x)
-        x = self.block3relu(x)
+        x = self.block3relu1(x)
         x = x+x_
+        x = self.block3relu2(x)
 
 
 
 
         # Middle flow
         x_ = self.block4(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block3relu2(x_)
         x = x+x_
+        x = self.block4relu(x)
+
         x_ = self.block5(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block4relu(x_)
         x = x+x_
+        x = self.block5relu(x)
+
         x_ = self.block6(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block5relu(x_)
         x = x+x_
+        x = self.block6relu(x)
+
         x_ = self.block7(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block6relu(x_)
         x = x+x_
+        x = self.block7relu(x)
+
         x_ = self.block8(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block7relu(x_)
         x = x+x_
+        x = self.block8relu(x)
+
         x_ = self.block9(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block8relu(x_)
         x = x+x_
+        x = self.block9relu(x)
+
         x_ = self.block10(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block9relu(x_)
         x = x+x_
+        x = self.block10relu(x)
+
         x_ = self.block11(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block10relu(x_)
         x = x+x_
+        x = self.block11relu(x)
+
         x_ = self.block12(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block11relu(x_)
         x = x+x_
+        x = self.block12relu(x)
+
         x_ = self.block13(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block12relu(x_)
         x = x+x_
+        x = self.block13relu(x)
+
         x_ = self.block14(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block13relu(x_)
         x = x+x_
+        x = self.block14relu(x)
+
         x_ = self.block15(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block14relu(x_)
         x = x+x_
+        x = self.block15relu(x)
+
         x_ = self.block16(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block15relu(x_)
         x = x+x_
+        x = self.block16relu(x)
+
         x_ = self.block17(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block16relu(x_)
         x = x+x_
+        x = self.block17relu(x)
+
         x_ = self.block18(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block17relu(x_)
         x = x+x_
+        x = self.block18relu(x)
+
         x_ = self.block19(x)
-        x_ = self.block3relu(x_)
+        x_ = self.block18relu(x_)
         x = x+x_
+        x = self.block19relu(x)
 
         # Exit flow
         x_ = self.block20(x)
@@ -350,19 +387,20 @@ class DeepLab(nn.Module):
         x = self.block20skipbn(x)
         x = self.block20relu(x)
         x = x+x_
+        x = self.block20identity(x)
 
         #x = self.relu4(x)
         x = self.conv3(x)
         x = self.bn3(x)
-        x = self.relu5(x)
+        x = self.relu3(x)
 
         x = self.conv4(x)
         x = self.bn4(x)
-        x = self.relu6(x)
+        x = self.relu4(x)
 
         x = self.conv5(x)
         x = self.bn5(x)
-        x = self.relu7(x)
+        x = self.relu5(x)
 
         #ASPP
         x1 = self.aspp1(x)
