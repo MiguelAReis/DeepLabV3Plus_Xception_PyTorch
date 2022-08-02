@@ -39,28 +39,33 @@ class Block(nn.Module):
 
         filters = inplanes
         if grow_first:
-            rep.append(nn.ReLU(inplace=True))
+            rep.append(nn.ReLU(inplace=True)
+                       )
             rep.append(SeparableConv2d(inplanes, planes, 3, 1, dilation))
             rep.append(nn.BatchNorm2d(planes))
             filters = planes
 
         for i in range(reps - 1):
-            rep.append(nn.ReLU(inplace=True))
+            rep.append(nn.ReLU(inplace=True)
+                       )
             rep.append(SeparableConv2d(filters, filters, 3, 1, dilation))
             rep.append(nn.BatchNorm2d(filters))
 
         if not grow_first:
-            rep.append(nn.ReLU(inplace=True))
+            rep.append(nn.ReLU(inplace=True)
+                       )
             rep.append(SeparableConv2d(inplanes, planes, 3, 1, dilation))
             rep.append(nn.BatchNorm2d(planes))
 
         if stride != 1:
-            rep.append(nn.ReLU(inplace=True))
+            rep.append(nn.ReLU(inplace=True)
+                       )
             rep.append(SeparableConv2d(planes, planes, 3, 2))
             rep.append(nn.BatchNorm2d(planes))
 
         if stride == 1 and is_last:
-            rep.append(nn.ReLU(inplace=True))
+            rep.append(nn.ReLU(inplace=True)
+                       )
             rep.append(SeparableConv2d(planes, planes, 3, 1))
             rep.append(nn.BatchNorm2d(planes))
 
@@ -221,6 +226,7 @@ class DeepLab(nn.Module):
 
         self.global_avg_pool = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Identity(),
             nn.Conv2d(inplanes, 256, 1, stride=1, bias=False),
             nn.BatchNorm2d(256)
             )
