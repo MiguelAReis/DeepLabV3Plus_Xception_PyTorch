@@ -91,28 +91,33 @@ class Block(nn.Module):
 
 		filters = inplanes
 		if grow_first:
-			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True))
+			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
+					   )
 			rep.append(SeparableConv2d(inplanes, planes, 3, 1, dilation))
 			rep.append(nn.BatchNorm2d(planes))
 			filters = planes
 
 		for i in range(reps - 1):
-			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True))
+			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
+					   )
 			rep.append(SeparableConv2d(filters, filters, 3, 1, dilation))
 			rep.append(nn.BatchNorm2d(filters))
 
 		if not grow_first:
-			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True))
+			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
+					   )
 			rep.append(SeparableConv2d(inplanes, planes, 3, 1, dilation))
 			rep.append(nn.BatchNorm2d(planes))
 
 		if stride != 1:
-			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True))
+			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
+					   )
 			rep.append(SeparableConv2d(planes, planes, 3, 2))
 			rep.append(nn.BatchNorm2d(planes))
 
 		if stride == 1 and is_last:
-			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True))
+			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
+					   )
 			rep.append(SeparableConv2d(planes, planes, 3, 1))
 			rep.append(nn.BatchNorm2d(planes))
 
@@ -281,12 +286,14 @@ class DeepLabQuant(nn.Module):
 			qnn.QuantConv2d(inplanes, 256, 1, stride=1, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True),
 			nn.BatchNorm2d(256)
 			)
-
+		self.avgpoolidentity = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
+		self.interpolidentity1= self.aspprelu1
 
 		self.asppconv1 = qnn.QuantConv2d(1280, 256, 1, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 		self.asppbn1 = nn.BatchNorm2d(256)
 		self.aspprelu2 = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.asppdropout = qnn.QuantDropout(0.5, return_quant_tensor=True)
+		self.interpolidentity2= qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
 
 
 		low_level_inplanes = 128
@@ -308,6 +315,7 @@ class DeepLabQuant(nn.Module):
 			qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 			)
 		self.decoderidentity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
+		self.interpolidentity3= qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
 
 	def setBitWidths(weight,activation):
 		global weightBitWidth
@@ -476,10 +484,12 @@ class DeepLabQuant(nn.Module):
 		x4 =self.aspprelu1(x4)
 		#print("before avg pool ="+ str(x.size()))
 		x5 = self.global_avg_pool(x)
-		x5 =self.aspprelu1(x5)
+		x5 = self.avgpoolidentity(x)
+
 		#print("before size ="+ str(x5.size()))
 		x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)
 	   #print("after size ="+ str(x5.size()))
+		x5 =self.interpolidentity1(x5)
 
 		x = torch.cat((x1, x2, x3, x4, x5), dim=1)
 
@@ -497,6 +507,7 @@ class DeepLabQuant(nn.Module):
 		low_level_feat = self.aspprelu2(low_level_feat)
 		#print("before size ="+ str(x.size()))
 		x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
+		x =self.interpolidentity2(x)
 		#print("after size ="+ str(x.size()))
 		x = torch.cat((x, low_level_feat), dim=1)
 		x = self.decoderlast_conv(x)
@@ -504,6 +515,7 @@ class DeepLabQuant(nn.Module):
 
 		#print("before size ="+ str(x.size()))
 		x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
+		x = self.interpolidentity3(x)
 		#print("after size ="+ str(x.size()))
 
 
