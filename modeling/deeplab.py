@@ -244,7 +244,7 @@ class DeepLab(nn.Module):
 
         self.decoderconv1 = nn.Conv2d(low_level_inplanes, 48, 1, bias=False)
         self.decoderbn1 = nn.BatchNorm2d(48)
-        self.decoderrelu = self.aspprelu2
+        self.decoderrelu = nn.ReLU()
 
         self.decoderlast_conv = nn.Sequential(
             nn.Conv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False),
@@ -445,9 +445,10 @@ class DeepLab(nn.Module):
 
         low_level_feat = self.decoderconv1(low_level_feat)
         low_level_feat = self.decoderbn1(low_level_feat)
-        low_level_feat = self.aspprelu2(low_level_feat)
+        low_level_feat = self.decoderrelu(low_level_feat)
         #print("before size ="+ str(x.size()))
         x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
+        x = self.decoderrelu(x)
         #print("after size ="+ str(x.size()))
         x = torch.cat((x, low_level_feat), dim=1)
         x = self.decoderlast_conv(x)

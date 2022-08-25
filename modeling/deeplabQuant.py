@@ -304,7 +304,7 @@ class DeepLabQuant(nn.Module):
 
 		self.decoderconv1 = qnn.QuantConv2d(low_level_inplanes, 48, 1, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 		self.decoderbn1 = nn.BatchNorm2d(48)
-		self.decoderrelu = self.aspprelu2
+		self.decoderrelu = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
 		self.decoderlast_conv = nn.Sequential(
 			qnn.QuantConv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True),
@@ -507,10 +507,10 @@ class DeepLabQuant(nn.Module):
 
 		low_level_feat = self.decoderconv1(low_level_feat)
 		low_level_feat = self.decoderbn1(low_level_feat)
-		low_level_feat = self.aspprelu2(low_level_feat)
+		low_level_feat = self.decoderrelu(low_level_feat)
 		#print("before size ="+ str(x.size()))
 		x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
-		x =self.interpolidentity2(x)
+		x =self.decoderrelu(x)
 		#print("after size ="+ str(x.size()))
 		x = torch.cat((x, low_level_feat), dim=1)
 		x = self.decoderlast_conv(x)
