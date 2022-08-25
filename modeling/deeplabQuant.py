@@ -487,7 +487,7 @@ class DeepLabQuant(nn.Module):
 		x4 =self.aspprelu1(x4)
 		#print("before avg pool ="+ str(x.size()))
 		x5 = self.global_avg_pool(x)
-		x5 = self.avgpoolidentity(x)
+		x5 = self.avgpoolidentity(x5)
 
 		#print("before size ="+ str(x5.size()))
 		x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)

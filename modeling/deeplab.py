@@ -230,6 +230,7 @@ class DeepLab(nn.Module):
             nn.Conv2d(inplanes, 256, 1, stride=1, bias=False),
             nn.BatchNorm2d(256)
             )
+        self.avgpoolidentity = nn.ReLU()
 
 
         self.asppconv1 = nn.Conv2d(1280, 256, 1, bias=False)
@@ -419,15 +420,20 @@ class DeepLab(nn.Module):
         x4 =self.aspprelu1(x4)
         #print("before avg pool ="+ str(x.size()))
         x5 = self.global_avg_pool(x)
-        x5 = self.avgpoolidentity(x)
+        x5 = self.avgpoolidentity(x5)
+        #print("x1 size ="+ str(x1.size()))
+        #print("x2 size ="+ str(x2.size()))
+        #print("x3 size ="+ str(x3.size()))
+        #print("x4 size ="+ str(x4.size()))
+
 
         
         #print("before size ="+ str(x5.size()))
         x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)
-       #print("after size ="+ str(x5.size()))
+        #print("after size ="+ str(x5.size()))
         x5 =self.aspprelu1(x5)
         x = torch.cat((x1, x2, x3, x4, x5), dim=1)
-
+        #print("x size ="+ str(x.size()))
 
         x = self.asppconv1(x)
         x = self.asppbn1(x)
