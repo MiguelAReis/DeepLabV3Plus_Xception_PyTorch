@@ -296,7 +296,7 @@ class DeepLabQuant(nn.Module):
 		self.asppbn1 = nn.BatchNorm2d(256)
 		self.aspprelu2 = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.asppdropout = qnn.QuantDropout(0.5, return_quant_tensor=True)
-		self.interpolidentity2= self.aspprelu2
+		
 
 
 		low_level_inplanes = 128
@@ -492,7 +492,7 @@ class DeepLabQuant(nn.Module):
 		#print("before size ="+ str(x5.size()))
 		x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)
 	   #print("after size ="+ str(x5.size()))
-		x5 =self.interpolidentity1(x5)
+		x5 =self.aspprelu1(x5)
 
 		x = torch.cat((x1, x2, x3, x4, x5), dim=1)
 

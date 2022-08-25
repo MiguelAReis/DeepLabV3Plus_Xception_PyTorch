@@ -419,11 +419,13 @@ class DeepLab(nn.Module):
         x4 =self.aspprelu1(x4)
         #print("before avg pool ="+ str(x.size()))
         x5 = self.global_avg_pool(x)
-        x5 =self.aspprelu1(x5)
+        x5 = self.avgpoolidentity(x)
+
+        
         #print("before size ="+ str(x5.size()))
         x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)
        #print("after size ="+ str(x5.size()))
-
+        x5 =self.aspprelu1(x5)
         x = torch.cat((x1, x2, x3, x4, x5), dim=1)
 
 
