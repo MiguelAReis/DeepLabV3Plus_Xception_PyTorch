@@ -18,7 +18,6 @@ from dependencies import value
 
 class CustomQuant(ExtendedInjector):
 	bit_width_impl_type = BitWidthImplType.CONST
-	scaling_impl_type = ScalingImplType.CONST
 	restrict_scaling_type = RestrictValueType.POWER_OF_TWO
 	zero_point_impl = ZeroZeroPoint
 	float_to_int_impl_type = FloatToIntImplType.ROUND
@@ -26,7 +25,7 @@ class CustomQuant(ExtendedInjector):
 	scaling_stats_op = StatsOp.MAX
 	scaling_per_output_channel = False
 	bit_width = None
-	narrow_range = True
+	narrow_range = False
 	signed = True
 	
 	@value
@@ -43,8 +42,12 @@ class CustomWeightQuant(CustomQuant,WeightQuantSolver):
 	scaling_const = 1.0		
 
 class CustomActQuant(CustomQuant, ActQuantSolver):
-	min_val = 0
-	max_val = 10
+    signed=False
+    float_to_int_impl_type = FloatToIntImplType.FLOOR
+
+class CustomSignedActQuant(CustomQuant, ActQuantSolver):
+    signed=True
+    float_to_int_impl_type = FloatToIntImplType.FLOOR
 
 #Global Variables
 
@@ -70,7 +73,7 @@ class SeparableConv2d(nn.Module):
 
 		self.conv1 = qnn.QuantConv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 		self.bn = nn.BatchNorm2d(inplanes)
-		self.identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
+		self.identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomSignedActQuant)
 		self.pointwise = qnn.QuantConv2d(inplanes, planes, 1, 1, 0, 1, 1, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 
 	def forward(self, x):
@@ -166,7 +169,7 @@ class DeepLabQuant(nn.Module):
 		global weightBitWidth
 		global activationBitWidth
 
-		self.imageQuant = qnn.QuantIdentity(bit_width=8, act_quant=CustomActQuant, return_quant_tensor=True)
+		self.imageQuant = qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
 		#BACKBONE
 
@@ -293,7 +296,7 @@ class DeepLabQuant(nn.Module):
 		self.asppbn1 = nn.BatchNorm2d(256)
 		self.aspprelu2 = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.asppdropout = qnn.QuantDropout(0.5, return_quant_tensor=True)
-		self.interpolidentity2= qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
+		self.interpolidentity2= self.aspprelu2
 
 
 		low_level_inplanes = 128
@@ -315,7 +318,7 @@ class DeepLabQuant(nn.Module):
 			qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 			)
 		self.decoderidentity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
-		self.interpolidentity3= qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
+		self.interpolidentity3= qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=False, act_quant=CustomActQuant)
 
 	def setBitWidths(weight,activation):
 		global weightBitWidth
