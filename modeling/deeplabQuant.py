@@ -71,14 +71,14 @@ class SeparableConv2d(nn.Module):
 	def __init__(self, inplanes, planes, kernel_size=3, stride=1, dilation=1, bias=False):
 		super(SeparableConv2d, self).__init__()
 
-		self.conv1 = qnn.QuantConv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
+		self.depthwise = qnn.QuantConv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 		self.bn = nn.BatchNorm2d(inplanes)
 		self.identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomSignedActQuant)
 		self.pointwise = qnn.QuantConv2d(inplanes, planes, 1, 1, 0, 1, 1, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 
 	def forward(self, x):
-		x = fixed_padding(x, self.conv1.kernel_size[0], dilation=self.conv1.dilation[0])
-		x = self.conv1(x)
+		x = fixed_padding(x, self.depthwise.kernel_size[0], dilation=self.depthwise.dilation[0])
+		x = self.depthwise(x)
 		x = self.bn(x)
 		x = self.identity(x)
 		x = self.pointwise(x)

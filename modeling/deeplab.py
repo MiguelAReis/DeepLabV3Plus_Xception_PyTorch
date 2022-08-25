@@ -16,14 +16,14 @@ class SeparableConv2d(nn.Module):
     def __init__(self, inplanes, planes, kernel_size=3, stride=1, dilation=1, bias=False):
         super(SeparableConv2d, self).__init__()
 
-        self.conv1 = nn.Conv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias)
+        self.depthwise = nn.Conv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias)
         self.bn = nn.BatchNorm2d(inplanes)
         self.identity = nn.Identity()
         self.pointwise = nn.Conv2d(inplanes, planes, 1, 1, 0, 1, 1, bias=bias)
 
     def forward(self, x):
-        x = fixed_padding(x, self.conv1.kernel_size[0], dilation=self.conv1.dilation[0])
-        x = self.conv1(x)
+        x = fixed_padding(x, self.depthwise.kernel_size[0], dilation=self.depthwise.dilation[0])
+        x = self.depthwise(x)
         x = self.bn(x)
         x = self.identity(x)
         x = self.pointwise(x)
