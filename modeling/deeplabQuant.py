@@ -1,6 +1,6 @@
 #This file was generated with brevitasConverter.py
-weightBitWidth=8
-activationBitWidth=8
+weightBitWidth=-99
+activationBitWidth=-99
 
 import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
@@ -43,11 +43,11 @@ class CustomWeightQuant(CustomQuant,WeightQuantSolver):
 
 class CustomActQuant(CustomQuant, ActQuantSolver):
     signed=False
-    float_to_int_impl_type = FloatToIntImplType.FLOOR
+    float_to_int_impl_type = FloatToIntImplType.ROUND
 
 class CustomSignedActQuant(CustomQuant, ActQuantSolver):
     signed=True
-    float_to_int_impl_type = FloatToIntImplType.FLOOR
+    float_to_int_impl_type = FloatToIntImplType.ROUND
 
 #Global Variables
 
@@ -70,7 +70,8 @@ def fixed_padding(inputs, kernel_size, dilation):
 class SeparableConv2d(nn.Module):
 	def __init__(self, inplanes, planes, kernel_size=3, stride=1, dilation=1, bias=False):
 		super(SeparableConv2d, self).__init__()
-
+                global weightBitWidth
+                global activationBitWidth
 		self.depthwise = qnn.QuantConv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 		self.bn = nn.BatchNorm2d(inplanes)
 		self.identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomSignedActQuant)
@@ -88,7 +89,8 @@ class SeparableConv2d(nn.Module):
 class Block(nn.Module):
 	def __init__(self, inplanes, planes, reps, stride=1, dilation=1, start_with_relu=True, grow_first=True, is_last=False):
 		super(Block, self).__init__()
-
+                global weightBitWidth
+                global activationBitWidth
 		#self.relu = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		rep = []
 
@@ -151,6 +153,8 @@ class Block(nn.Module):
 class _ASPPModule(nn.Module):
 	def __init__(self, inplanes, planes, kernel_size, padding, dilation):
 		super(_ASPPModule, self).__init__()
+                global weightBitWidth
+                global activationBitWidth
 		self.atrous_conv = qnn.QuantConv2d(inplanes, planes, kernel_size=kernel_size, stride=1, padding=padding, dilation=dilation, bias=False, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 		self.bn = nn.BatchNorm2d(planes)
 
@@ -317,8 +321,8 @@ class DeepLabQuant(nn.Module):
 			qnn.QuantDropout(0.1, return_quant_tensor=True),
 			qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 			)
-		self.decoderidentity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
-		self.interpolidentity3= qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=False, act_quant=CustomActQuant)
+		self.decoderidentity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomSignedActQuant)
+		self.interpolidentity3= qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=False, act_quant=CustomSignedActQuant)
 
 	def setBitWidths(weight,activation):
 		global weightBitWidth
