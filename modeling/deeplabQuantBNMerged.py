@@ -73,7 +73,7 @@ class SeparableConv2d(nn.Module):
 		global weightBitWidth
 		global activationBitWidth
 		self.depthwise = qnn.QuantConv2d(inplanes, inplanes, kernel_size, stride, 0, dilation, groups=inplanes, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.bn = nn.BatchNorm2d(inplanes)
+		self.bn = nn.Identity()
 		self.identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomSignedActQuant)
 		self.pointwise = qnn.QuantConv2d(inplanes, planes, 1, 1, 0, 1, 1, bias=bias, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
 
@@ -99,32 +99,32 @@ class Block(nn.Module):
 			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 					   )
 			rep.append(SeparableConv2d(inplanes, planes, 3, 1, dilation))
-			rep.append(nn.BatchNorm2d(planes))
+			rep.append(nn.Identity())
 			filters = planes
 
 		for i in range(reps - 1):
 			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 					   )
 			rep.append(SeparableConv2d(filters, filters, 3, 1, dilation))
-			rep.append(nn.BatchNorm2d(filters))
+			rep.append(nn.Identity())
 
 		if not grow_first:
 			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 					   )
 			rep.append(SeparableConv2d(inplanes, planes, 3, 1, dilation))
-			rep.append(nn.BatchNorm2d(planes))
+			rep.append(nn.Identity())
 
 		if stride != 1:
 			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 					   )
 			rep.append(SeparableConv2d(planes, planes, 3, 2))
-			rep.append(nn.BatchNorm2d(planes))
+			rep.append(nn.Identity())
 
 		if stride == 1 and is_last:
 			rep.append(qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 					   )
 			rep.append(SeparableConv2d(planes, planes, 3, 1))
-			rep.append(nn.BatchNorm2d(planes))
+			rep.append(nn.Identity())
 
 		if not start_with_relu:
 			rep = rep[1:]
@@ -156,7 +156,7 @@ class _ASPPModule(nn.Module):
 		global weightBitWidth
 		global activationBitWidth
 		self.atrous_conv = qnn.QuantConv2d(inplanes, planes, kernel_size=kernel_size, stride=1, padding=padding, dilation=dilation, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.bn = nn.BatchNorm2d(planes)
+		self.bn = nn.Identity()
 
 
 
@@ -190,30 +190,30 @@ class DeepLabQuant(nn.Module):
 
 		# Entry flow
 		self.conv1 = qnn.QuantConv2d(3, 32, 3, stride=2, padding=1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.bn1 = nn.BatchNorm2d(32)
+		self.bn1 = nn.Identity()
 		self.relu1 = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		
 
 		self.conv2 = qnn.QuantConv2d(32, 64, 3, stride=1, padding=1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.bn2 = nn.BatchNorm2d(64)
+		self.bn2 = nn.Identity()
 		self.relu2 = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
 
 		self.block1 = Block(64, 128, reps=2, stride=2,  start_with_relu=False) #skip
 		self.block1skip = qnn.QuantConv2d(64, 128, 1, stride=2, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.block1skipbn = nn.BatchNorm2d(128)
+		self.block1skipbn = nn.Identity()
 		self.block1relu = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.block1identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
 
 		self.block2 = Block(128, 256, reps=2, stride=2, start_with_relu=False,grow_first=True) #skip
 		self.block2skip = qnn.QuantConv2d(128, 256, 1, stride=2, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.block2skipbn = nn.BatchNorm2d(256)
+		self.block2skipbn = nn.Identity()
 		self.block2relu = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.block2identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
 
 		self.block3 = Block(256, 728, reps=2, stride=entry_block3_stride,start_with_relu=False, grow_first=True, is_last=True) #skip
 		self.block3skip = qnn.QuantConv2d(256, 728, 1, stride=entry_block3_stride, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.block3skipbn = nn.BatchNorm2d(728)
+		self.block3skipbn = nn.Identity()
 		self.block3relu1 = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.block3relu2 = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
@@ -254,20 +254,20 @@ class DeepLabQuant(nn.Module):
 		# Exit flow
 		self.block20 = Block(728, 1024, reps=2, stride=1, dilation=exit_block_dilations[0], start_with_relu=False, grow_first=False, is_last=True) #skip
 		self.block20skip = qnn.QuantConv2d(728, 1024, 1, stride=1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.block20skipbn = nn.BatchNorm2d(1024)
+		self.block20skipbn = nn.Identity()
 		self.block20relu = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.block20identity = qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant)
 
 		self.conv3 = SeparableConv2d(1024, 1536, 3, stride=1, dilation=exit_block_dilations[1])
-		self.bn3 = nn.BatchNorm2d(1536)
+		self.bn3 = nn.Identity()
 		self.relu3 = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
 		self.conv4 = SeparableConv2d(1536, 1536, 3, stride=1, dilation=exit_block_dilations[1])
-		self.bn4 = nn.BatchNorm2d(1536)
+		self.bn4 = nn.Identity()
 		self.relu4 = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
 		self.conv5 = SeparableConv2d(1536, 2048, 3, stride=1, dilation=exit_block_dilations[1])
-		self.bn5 = nn.BatchNorm2d(2048)
+		self.bn5 = nn.Identity()
 		self.relu5 = qnn.QuantReLU(inplace=True, bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
 		#ASPP
@@ -291,13 +291,13 @@ class DeepLabQuant(nn.Module):
 			nn.AdaptiveAvgPool2d((1, 1)),
 			qnn.QuantIdentity( bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant),
 			qnn.QuantConv2d(inplanes, 256, 1, stride=1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True),
-			nn.BatchNorm2d(256)
+			nn.Identity()
 			)
 		self.avgpoolidentity = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.interpolidentity1= self.aspprelu1
 
 		self.asppconv1 = qnn.QuantConv2d(1280, 256, 1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.asppbn1 = nn.BatchNorm2d(256)
+		self.asppbn1 = nn.Identity()
 		self.aspprelu2 = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 		self.asppdropout = qnn.QuantDropout(0.5, return_quant_tensor=True)
 		
@@ -307,16 +307,16 @@ class DeepLabQuant(nn.Module):
 
 
 		self.decoderconv1 = qnn.QuantConv2d(low_level_inplanes, 48, 1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
-		self.decoderbn1 = nn.BatchNorm2d(48)
+		self.decoderbn1 = nn.Identity()
 		self.decoderrelu = qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
 
 		self.decoderlast_conv = nn.Sequential(
 			qnn.QuantConv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True),
-			nn.BatchNorm2d(256),
+			nn.Identity(),
 			qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True),
 			qnn.QuantDropout(0.5, return_quant_tensor=True),
 			qnn.QuantConv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True),
-			nn.BatchNorm2d(256),
+			nn.Identity(),
 			qnn.QuantReLU(bit_width=activationBitWidth, return_quant_tensor=True, act_quant=CustomActQuant) if weightBitWidth not in (1,2) else qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True),
 			qnn.QuantDropout(0.1, return_quant_tensor=True),
 			qnn.QuantConv2d(256, num_classes, kernel_size=1, stride=1, weight_bit_width=weightBitWidth, bias_quant=BiasQuant, weight_quant=CustomWeightQuant, return_quant_tensor=True)
