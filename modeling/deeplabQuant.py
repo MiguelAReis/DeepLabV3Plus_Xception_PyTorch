@@ -43,11 +43,11 @@ class CustomWeightQuant(CustomQuant,WeightQuantSolver):
 
 class CustomActQuant(CustomQuant, ActQuantSolver):
     signed=False
-    float_to_int_impl_type = FloatToIntImplType.ROUND
+    float_to_int_impl_type = FloatToIntImplType.FLOOR
 
 class CustomSignedActQuant(CustomQuant, ActQuantSolver):
     signed=True
-    float_to_int_impl_type = FloatToIntImplType.ROUND
+    float_to_int_impl_type = FloatToIntImplType.FLOOR
 
 #Global Variables
 

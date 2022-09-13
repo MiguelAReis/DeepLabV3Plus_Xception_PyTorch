@@ -1,9 +1,10 @@
 #This file was generated with brevitasConverter.py
 weightBitWidth=-99
 activationBitWidth=-99
-
+imageIndex=0
 import brevitas.nn as qnn
 from brevitas.quant import Int8Bias as BiasQuant
+import numpy as np
 
 #Engine declaration
 from brevitas.inject import ExtendedInjector
@@ -173,7 +174,7 @@ class DeepLabQuant(nn.Module):
 		global weightBitWidth
 		global activationBitWidth
 
-		self.imageQuant = qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomActQuant, return_quant_tensor=True)
+		self.imageQuant = qnn.QuantIdentity(bit_width=activationBitWidth, act_quant=CustomSignedActQuant, return_quant_tensor=True)
 
 		#BACKBONE
 
@@ -331,51 +332,64 @@ class DeepLabQuant(nn.Module):
 		activationBitWidth=activation
 
 	def forward(self, input):
-
+		global imageIndex
 		#BACKBONE
 
 		 # Entry flow
-		x = self.conv1(self.imageQuant(input))
-		x = self.bn1(x)
-		x = self.relu1(x)
+		
+		x = self.imageQuant(input)
 
+		
+		torch.set_printoptions(profile="full")
+
+		x = self.conv1(x)
+
+		x = self.bn1(x)
+		
+		x = self.relu1(x)
+		
+	
 		x = self.conv2(x)
 		x = self.bn2(x)
 		x = self.relu2(x)
 
+		
+
+
 		x_ = self.block1(x)
 		x_ = self.block1relu(x_)
+
 		x = self.block1skip(x)
 		x = self.block1skipbn(x)
 		x = self.block1relu(x)
 		x = x+x_
 		x = self.block1identity(x)
-
-
-
-
+		
 		# add relu here
 		#x = self.relu3(x)
 		low_level_feat = x
 
 		x_ = self.block2(x)
 		x_ = self.block2relu(x_)
+
 		x = self.block2skip(x)
 		x = self.block2skipbn(x)
 		x = self.block2relu(x)
+
+
+
 		x = x+x_
 		x = self.block2identity(x)
 
 		x_ = self.block3(x)
 		x_ = self.block3relu1(x_)
+
+
 		x = self.block3skip(x)
 		x = self.block3skipbn(x)
 		x = self.block3relu1(x)
 		x = x+x_
 		x = self.block3relu2(x)
-
-
-
 
 		# Middle flow
 		x_ = self.block4(x)
@@ -383,35 +397,49 @@ class DeepLabQuant(nn.Module):
 		x = x+x_
 		x = self.block4relu(x)
 
+
+
 		x_ = self.block5(x)
 		x_ = self.block4relu(x_)
 		x = x+x_
 		x = self.block5relu(x)
+
 
 		x_ = self.block6(x)
 		x_ = self.block5relu(x_)
 		x = x+x_
 		x = self.block6relu(x)
 
+
+
+
 		x_ = self.block7(x)
 		x_ = self.block6relu(x_)
 		x = x+x_
 		x = self.block7relu(x)
+
+
 
 		x_ = self.block8(x)
 		x_ = self.block7relu(x_)
 		x = x+x_
 		x = self.block8relu(x)
 
+
 		x_ = self.block9(x)
 		x_ = self.block8relu(x_)
 		x = x+x_
 		x = self.block9relu(x)
 
+
+
+
 		x_ = self.block10(x)
 		x_ = self.block9relu(x_)
 		x = x+x_
 		x = self.block10relu(x)
+
+
 
 		x_ = self.block11(x)
 		x_ = self.block10relu(x_)
@@ -438,25 +466,35 @@ class DeepLabQuant(nn.Module):
 		x = x+x_
 		x = self.block15relu(x)
 
+
+
 		x_ = self.block16(x)
 		x_ = self.block15relu(x_)
 		x = x+x_
 		x = self.block16relu(x)
+
 
 		x_ = self.block17(x)
 		x_ = self.block16relu(x_)
 		x = x+x_
 		x = self.block17relu(x)
 
+
+
 		x_ = self.block18(x)
 		x_ = self.block17relu(x_)
 		x = x+x_
 		x = self.block18relu(x)
 
+
+
 		x_ = self.block19(x)
 		x_ = self.block18relu(x_)
 		x = x+x_
 		x = self.block19relu(x)
+
+
+
 
 		# Exit flow
 		x_ = self.block20(x)
@@ -466,6 +504,8 @@ class DeepLabQuant(nn.Module):
 		x = self.block20relu(x)
 		x = x+x_
 		x = self.block20identity(x)
+
+
 
 		#x = self.relu4(x)
 		x = self.conv3(x)
@@ -489,16 +529,18 @@ class DeepLabQuant(nn.Module):
 		x3 =self.aspprelu1(x3)
 		x4 = self.aspp4(x)
 		x4 =self.aspprelu1(x4)
-		#print("before avg pool ="+ str(x.size()))
 		x5 = self.global_avg_pool(x)
 		x5 = self.avgpoolidentity(x5)
 
-		#print("before size ="+ str(x5.size()))
+		
+
+		
 		x5 = F.interpolate(x5, size=x4.size()[2:], mode='bilinear', align_corners=True)
-	   #print("after size ="+ str(x5.size()))
 		x5 =self.aspprelu1(x5)
 
 		x = torch.cat((x1, x2, x3, x4, x5), dim=1)
+
+
 
 
 		x = self.asppconv1(x)
@@ -506,25 +548,25 @@ class DeepLabQuant(nn.Module):
 		x = self.aspprelu2(x)
 		x = self.asppdropout(x)
 
-
 		#DECODER
 
 		low_level_feat = self.decoderconv1(low_level_feat)
 		low_level_feat = self.decoderbn1(low_level_feat)
 		low_level_feat = self.decoderrelu(low_level_feat)
-		#print("before size ="+ str(x.size()))
+
 		x = F.interpolate(x, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
+
 		x =self.decoderrelu(x)
-		#print("after size ="+ str(x.size()))
+
 		x = torch.cat((x, low_level_feat), dim=1)
+
+
+
 		x = self.decoderlast_conv(x)
 		x = self.decoderidentity(x)
 
-		#print("before size ="+ str(x.size()))
 		x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
 		x = self.interpolidentity3(x)
-		#print("after size ="+ str(x.size()))
-
 
 		return x
 

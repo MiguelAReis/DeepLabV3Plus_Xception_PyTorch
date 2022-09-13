@@ -103,7 +103,7 @@ class _ASPPModule(nn.Module):
 
     def forward(self, x):
         x = self.atrous_conv(x)
-        x = self.bn(x)
+        #x = self.bn(x)
 
         return x
 
@@ -222,7 +222,7 @@ class DeepLab(nn.Module):
         self.aspp2 = _ASPPModule(inplanes, 256, 3, padding=dilations[1], dilation=dilations[1])
         self.aspp3 = _ASPPModule(inplanes, 256, 3, padding=dilations[2], dilation=dilations[2])
         self.aspp4 = _ASPPModule(inplanes, 256, 3, padding=dilations[3], dilation=dilations[3])
-        self.aspprelu1 = nn.ReLU()
+        self.aspprelu1 = nn.ReLU(inplace=True)
 
         self.global_avg_pool = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),
@@ -230,12 +230,12 @@ class DeepLab(nn.Module):
             nn.Conv2d(inplanes, 256, 1, stride=1, bias=False),
             nn.BatchNorm2d(256)
             )
-        self.avgpoolidentity = nn.ReLU()
+        self.avgpoolidentity = nn.ReLU(inplace=True)
 
 
         self.asppconv1 = nn.Conv2d(1280, 256, 1, bias=False)
         self.asppbn1 = nn.BatchNorm2d(256)
-        self.aspprelu2 = nn.ReLU()
+        self.aspprelu2 = nn.ReLU(inplace=True)
         self.asppdropout = nn.Dropout(0.5)
 
 
@@ -244,16 +244,16 @@ class DeepLab(nn.Module):
 
         self.decoderconv1 = nn.Conv2d(low_level_inplanes, 48, 1, bias=False)
         self.decoderbn1 = nn.BatchNorm2d(48)
-        self.decoderrelu = nn.ReLU()
+        self.decoderrelu = nn.ReLU(inplace=True)
 
         self.decoderlast_conv = nn.Sequential(
             nn.Conv2d(304, 256, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(256),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Dropout(0.5),
             nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(256),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Dropout(0.1),
             nn.Conv2d(256, num_classes, kernel_size=1, stride=1)
             )
